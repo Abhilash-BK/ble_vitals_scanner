@@ -19,6 +19,7 @@ class BleProvider extends ChangeNotifier {
   StreamSubscription<BleStatus>? _statusSubscription;
   StreamSubscription<DiscoveredDevice>? _scanSubscription;
   StreamSubscription<ConnectionStateUpdate>? _connectionSubscription;
+  Timer? _scanTimeoutTimer;
   final Map<String, StreamSubscription<List<int>>> _notifySubscriptions = {};
 
   final Map<String, BleDeviceModel> _discoveredDevices = {};
@@ -112,9 +113,15 @@ class BleProvider extends ChangeNotifier {
         notifyListeners();
       },
     );
+
+    _scanTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      stopScan();
+    });
   }
 
   Future<void> stopScan() async {
+    _scanTimeoutTimer?.cancel();
+    _scanTimeoutTimer = null;
     await _scanSubscription?.cancel();
     _scanSubscription = null;
     if (_isScanning) {
@@ -323,6 +330,7 @@ class BleProvider extends ChangeNotifier {
   @override
   void dispose() {
     _statusSubscription?.cancel();
+    _scanTimeoutTimer?.cancel();
     _scanSubscription?.cancel();
     _connectionSubscription?.cancel();
     for (final subscription in _notifySubscriptions.values) {

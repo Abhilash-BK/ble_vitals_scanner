@@ -7,8 +7,10 @@ services and characteristics, read characteristic values, subscribe to
 notifications, and parse common heart-rate and temperature payloads into live
 vitals.
 
-The project also includes an optional Python BLE simulator for testing the app
-without a dedicated vitals peripheral, subject to host Bluetooth support.
+All application logic is implemented in Flutter/Dart. BLE functionality is
+implemented only with `flutter_reactive_ble`. No custom native Android or iOS
+feature code is included; the Android directory is the standard Flutter build
+scaffold with the required Android permissions.
 
 ## Features
 
@@ -21,9 +23,17 @@ without a dedicated vitals peripheral, subject to host Bluetooth support.
 - Live parsed vitals for heart rate and temperature
 - Raw byte and UTF-8 characteristic display
 - Recent device persistence with `shared_preferences`
-- Light/dark theme toggle
+- Dark theme by default with a light/dark toggle
+- Scan starts on launch and stops automatically after 10 seconds
 - Android runtime permission handling
-- Optional Python BLE vitals simulator
+
+## Constraints Compliance
+
+- BLE functionality uses only `flutter_reactive_ble`.
+- App feature logic is Flutter/Dart only.
+- No custom native Android/iOS code is used for app features or BLE behavior.
+- Android support is included and mandatory.
+- iOS support is not included in this MVP.
 
 ## Tech Stack
 
@@ -34,7 +44,7 @@ without a dedicated vitals peripheral, subject to host Bluetooth support.
 - `provider`
 - `permission_handler`
 - `shared_preferences`
-- Python simulator using `bless`
+- `intl`
 
 ## Project Structure
 
@@ -58,9 +68,10 @@ lib/
     characteristic_tile.dart
     connection_status.dart
     device_tile.dart
-python_simulator/
-  ble_simulator.py
-  README.md
+android/
+  Standard Flutter Android scaffold and permission configuration
+test/
+  widget_test.dart
 ```
 
 ## Requirements
@@ -69,7 +80,6 @@ python_simulator/
 - Android Studio with Android SDK installed
 - Physical Android device with BLE support
 - Android 10 or newer recommended
-- Python 3.10 or newer for the optional simulator
 
 BLE scanning and connection testing should be done on a physical Android device.
 Most emulators do not expose real BLE hardware.
@@ -102,24 +112,20 @@ The debug APK is generated at:
 build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-## Python BLE Simulator
+## Testing
 
-The simulator advertises a BLE heart-rate service and publishes changing heart
-rate and temperature values.
+Use a real BLE device with readable or notifiable GATT characteristics, such as a
+BLE heart-rate monitor or a microcontroller configured as a BLE peripheral.
 
-```bash
-pip install bless
-python python_simulator/ble_simulator.py
-```
+Recommended checks:
 
-Advertised UUIDs:
-
-- Vitals service: `0000180d-0000-1000-8000-00805f9b34fb`
-- Heart rate characteristic: `00002a37-0000-1000-8000-00805f9b34fb`
-- Temperature characteristic: `00002a1c-0000-1000-8000-00805f9b34fb`
-
-Simulator support depends on the host operating system, Bluetooth adapter, and
-permission model. Use a real BLE device for final validation.
+1. Grant Android Bluetooth/location permissions.
+2. Watch the real-time scan list populate for 10 seconds.
+3. Connect to a selected device.
+4. Verify services and characteristics appear.
+5. Read readable characteristics.
+6. Subscribe to notify/indicate characteristics.
+7. Confirm parsed vitals or raw characteristic bytes update in the UI.
 
 ## Validation
 
