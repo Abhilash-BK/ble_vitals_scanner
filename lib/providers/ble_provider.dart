@@ -212,6 +212,7 @@ class BleProvider extends ChangeNotifier {
       // QualifiedCharacteristic for the current MVP read/subscribe workflow.
       // ignore: deprecated_member_use
       _services = await ble.discoverServices(device.id);
+      await _subscribeToKnownVitalCharacteristics(device.id);
     } catch (error) {
       _errorMessage = 'Service discovery failed: $error';
     } finally {
@@ -268,6 +269,37 @@ class BleProvider extends ChangeNotifier {
 
   bool isSubscribed(QualifiedCharacteristic characteristic) {
     return _notifySubscriptions.containsKey(_characteristicKey(characteristic));
+  }
+
+  Future<void> _subscribeToKnownVitalCharacteristics(String deviceId) async {
+    for (final service in _services) {
+      for (final characteristic in service.characteristics) {
+        final characteristicUuid =
+            characteristic.characteristicId.toString().toLowerCase();
+        final isKnownVital =
+            characteristicUuid == AppConstants.heartRateMeasurementUuid ||
+                characteristicUuid == AppConstants.temperatureMeasurementUuid;
+
+        if (!isKnownVital) {
+          continue;
+        }
+
+        final qualifiedCharacteristic = QualifiedCharacteristic(
+          serviceId: service.serviceId,
+          characteristicId: characteristic.characteristicId,
+          deviceId: deviceId,
+        );
+
+        if (characteristic.isReadable) {
+          await readCharacteristic(qualifiedCharacteristic);
+        }
+
+        if ((characteristic.isNotifiable || characteristic.isIndicatable) &&
+            !isSubscribed(qualifiedCharacteristic)) {
+          await subscribeToCharacteristic(qualifiedCharacteristic);
+        }
+      }
+    }
   }
 
   void _storeCharacteristicData(String characteristicUuid, List<int> data) {

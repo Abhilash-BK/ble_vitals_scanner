@@ -14,7 +14,13 @@ class BlePermissionHandler {
       Permission.locationWhenInUse,
     ].request();
 
-    return statuses.values.every((status) => status.isGranted);
+    final hasAndroid12BlePermissions =
+        statuses[Permission.bluetoothScan]?.isGranted == true &&
+            statuses[Permission.bluetoothConnect]?.isGranted == true;
+    final hasLegacyLocationPermission =
+        statuses[Permission.locationWhenInUse]?.isGranted == true;
+
+    return hasAndroid12BlePermissions || hasLegacyLocationPermission;
   }
 
   static Future<bool> hasBlePermissions() async {
@@ -26,6 +32,6 @@ class BlePermissionHandler {
     final connect = await Permission.bluetoothConnect.status;
     final location = await Permission.locationWhenInUse.status;
 
-    return scan.isGranted && connect.isGranted && location.isGranted;
+    return (scan.isGranted && connect.isGranted) || location.isGranted;
   }
 }
